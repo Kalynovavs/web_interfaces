@@ -10,7 +10,9 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.chrome.ChromeOptions;
 
+import static com.codeborne.selenide.Condition.cssValue;
 import static com.codeborne.selenide.Condition.exactText;
+import static com.codeborne.selenide.Selectors.by;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
 
@@ -34,6 +36,7 @@ public class CallbackTest {
         options.addArguments("--disable-extensions");
         options.addArguments("--no-sandbox");
         driver = new ChromeDriver(options);
+        open("http://localhost:9999");
     }
 
     @AfterEach
@@ -45,7 +48,6 @@ public class CallbackTest {
 
     @Test
     void shouldSubmitRequestSuccess() {
-        open("http://localhost:9999");
         SelenideElement form =$(".form");
         form.$("[data-test-id=name] input").setValue("Василий");
         form.$("[data-test-id=phone] input").setValue("+79270000000");
@@ -55,12 +57,59 @@ public class CallbackTest {
     }
 
     @Test
-    void shouldFormValidateReject() {
-        open("http://localhost:9999");
+    void shouldFormValidateWithLongName() {
+        SelenideElement form =$(".form");
+        form.$("[data-test-id=name] input").setValue("Василий Маршал-Передовой");
+        form.$("[data-test-id=phone] input").setValue("+79270000000");
+        form.$("[data-test-id=agreement]").click();
+        form.$(".button").click();
+        $("[data-test-id=order-success]").shouldHave(exactText("  Ваша заявка успешно отправлена! Наш менеджер свяжется с вами в ближайшее время."));
+    }
+
+    @Test
+    void shouldFormValidateWithoutAgreement() {
+        SelenideElement form =$(".form");
+        form.$("[data-test-id=name] input").setValue("Василий");
+        form.$("[data-test-id=phone] input").setValue("+79270000000");
+        form.$(".button").click();
+        form.$("[data-test-id=agreement]").shouldHave(cssValue("color", "rgba(255, 92, 92, 1)"));
+    }
+
+    @Test
+    void shouldFormValidateEmptyName() {
         SelenideElement form =$(".form");
         form.$("[data-test-id=phone] input").setValue("+79270000000");
         form.$("[data-test-id=agreement]").click();
         form.$(".button").click();
         form.$("[data-test-id=name].input_invalid .input__sub").shouldHave(exactText("Поле обязательно для заполнения"));
+    }
+
+    @Test
+    void shouldFormValidateEmptyNumber() {
+        SelenideElement form =$(".form");
+        form.$("[data-test-id=name] input").setValue("Валентина Калынова");
+        form.$("[data-test-id=agreement]").click();
+        form.$(".button").click();
+        form.$("[data-test-id=phone].input_invalid .input__sub").shouldHave(exactText("Поле обязательно для заполнения"));
+    }
+
+    @Test
+    void shouldFormValidateWrongName() {
+        SelenideElement form =$(".form");
+        form.$("[data-test-id=name] input").setValue("Valentina Kalynova");
+        form.$("[data-test-id=phone] input").setValue("+79270000000");
+        form.$("[data-test-id=agreement]").click();
+        form.$(".button").click();
+        form.$("[data-test-id=name].input_invalid .input__sub").shouldHave(exactText("Имя и Фамилия указаные неверно. Допустимы только русские буквы, пробелы и дефисы."));
+    }
+
+    @Test
+    void shouldFormValidateWrongNumber() {
+        SelenideElement form =$(".form");
+        form.$("[data-test-id=name] input").setValue("Валентина Калынова");
+        form.$("[data-test-id=phone] input").setValue("+3 3 3 3");
+        form.$("[data-test-id=agreement]").click();
+        form.$(".button").click();
+        form.$("[data-test-id=phone].input_invalid .input__sub").shouldHave(exactText("Телефон указан неверно. Должно быть 11 цифр, например, +79012345678."));
     }
 }
